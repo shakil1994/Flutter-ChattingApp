@@ -1,6 +1,7 @@
 // @dart=2.9
 
 import 'package:chat_app/const/const.dart';
+import 'package:chat_app/screen/chat_screen.dart';
 import 'package:chat_app/screen/register_screen.dart';
 import 'package:chat_app/utils/utils.dart';
 import 'package:firebase_auth_ui/firebase_auth_ui.dart';
@@ -40,6 +41,16 @@ class MyApp extends StatelessWidget {
                     app: app,
                     user:
                         FirebaseAuth.FirebaseAuth.instance.currentUser ?? null),
+                type: PageTransitionType.fade,
+                settings: settings);
+            break;
+
+          case '/detail':
+            return PageTransition(
+                child: DetailScreen(
+                    app: app,
+                    user:
+                    FirebaseAuth.FirebaseAuth.instance.currentUser ?? null),
                 type: PageTransitionType.fade,
                 settings: settings);
             break;

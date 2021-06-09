@@ -3,10 +3,12 @@ import 'dart:convert';
 import 'dart:math';
 
 import 'package:chat_app/model/user_model.dart';
+import 'package:chat_app/state/state_manager.dart';
 import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth;
 import 'package:firebase_database/firebase_database.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/all.dart';
 
 Widget loadPeople(DatabaseReference _peopleRef) {
   return StreamBuilder(
@@ -27,7 +29,10 @@ Widget loadPeople(DatabaseReference _peopleRef) {
             itemCount: userModels.length,
             itemBuilder: (context, index) {
               return GestureDetector(
-                onTap: () {},
+                onTap: () {
+                  context.read(chatUser).state = userModels[index];
+                  Navigator.pushNamed(context, "/detail");
+                },
                 child: Column(
                   children: [
                     ListTile(
