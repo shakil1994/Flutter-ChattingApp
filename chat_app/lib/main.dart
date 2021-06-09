@@ -30,12 +30,13 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      debugShowCheckedModeBanner: false,
       title: 'Flutter Demo',
       onGenerateRoute: (settings) {
         switch (settings.name) {
           case '/register':
             return PageTransition(
-                child: RegisterScreen(app: app), type: PageTransitionType.fade,
+                child: RegisterScreen(app: app, user: FirebaseAuth.FirebaseAuth.instance.currentUser ?? null), type: PageTransitionType.fade,
             settings: settings);
             break;
 
@@ -145,7 +146,12 @@ class _MyHomePageState extends State<MyHomePage>
               })
             }
           else
-            {Navigator.pushNamed(context, "/register")}
+            {
+              setState(() {
+                Navigator.pushNamed(context, "/register");
+                isUserInit = true;
+              })
+            }
         })
       });
     }

@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 
 void showOnlySnackBar (BuildContext context, String message){
   ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-    content: Text('$message'),
-    action: SnackBarAction(label: 'View Bag', onPressed: () => Navigator.of(context).pop(),)
+    content: Text('$message')
+        /** onPressed: () => Navigator.of(context).pop() */
   ));
 }
