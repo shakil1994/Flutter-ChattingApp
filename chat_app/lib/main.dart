@@ -1,10 +1,8 @@
 // @dart=2.9
-import 'dart:math';
 
 import 'package:chat_app/const/const.dart';
 import 'package:chat_app/screen/register_screen.dart';
 import 'package:chat_app/utils/utils.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_ui/firebase_auth_ui.dart';
 import 'package:firebase_auth_ui/providers.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -14,6 +12,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth;
 import 'package:page_transition/page_transition.dart';
+
+import 'firebase_utils/firebase_utils.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -36,11 +36,16 @@ class MyApp extends StatelessWidget {
         switch (settings.name) {
           case '/register':
             return PageTransition(
-                child: RegisterScreen(app: app, user: FirebaseAuth.FirebaseAuth.instance.currentUser ?? null), type: PageTransitionType.fade,
-            settings: settings);
+                child: RegisterScreen(
+                    app: app,
+                    user:
+                        FirebaseAuth.FirebaseAuth.instance.currentUser ?? null),
+                type: PageTransitionType.fade,
+                settings: settings);
             break;
 
-          default: return null;
+          default:
+            return null;
         }
       },
       theme: ThemeData(
@@ -69,16 +74,31 @@ class _MyHomePageState extends State<MyHomePage>
 
   bool isUserInit = false;
 
+  final List<Tab> tabs = <Tab>[
+    Tab(icon: Icon(Icons.chat), text: "Chat"),
+    Tab(icon: Icon(Icons.people), text: "Friend")
+  ];
+
+  TabController _tabController;
+
   @override
   void initState() {
     // TODO: implement initState
     super.initState();
 
+    _tabController = TabController(length: tabs.length, vsync: this);
+
     database = FirebaseDatabase(app: widget.app);
 
     WidgetsBinding.instance.addPostFrameCallback((timeStamp) {
-      processLogin(context);
+      processLogin(this.context);
     });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   @override
@@ -87,9 +107,26 @@ class _MyHomePageState extends State<MyHomePage>
       appBar: AppBar(
         // Here we take the value from the MyHomePage object that was created by
         // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
+        bottom: new TabBar(
+            isScrollable: false,
+            unselectedLabelColor: Colors.black45,
+            labelColor: Colors.white,
+            tabs: tabs,
+            controller: _tabController),
       ),
-      body: isUserInit ? Center(child: Text('${widget.app.name}'),) : Center(child: CircularProgressIndicator(),),
+      body: isUserInit
+          ? TabBarView(
+              controller: _tabController,
+              children: tabs.map((Tab tab) {
+                if (tab.text == 'Chat') {
+                  return loadChatList(database, _chatListRef);
+                } else {
+                  return loadPeople(_peopleRef);
+                }
+              }).toList())
+          : Center(
+              child: CircularProgressIndicator(),
+            ),
     );
   }
 
@@ -99,24 +136,23 @@ class _MyHomePageState extends State<MyHomePage>
     if (user == null) {
       FirebaseAuthUi.instance()
           .launchAuth([AuthProvider.phone()])
-          .then((fbUser) async =>
-      {
-        /** refresh state */
-        await _checkLoginState(context)
-      })
+          .then((fbUser) async => {
+                /** refresh state */
+                await _checkLoginState(this.context)
+              })
           .catchError((e) {
-        if (e is PlatformException) {
-          if (e.code == FirebaseAuthUi.kUserCancelledError) {
-            showOnlySnackBar(context, 'User cancelled login');
-          } else {
-            showOnlySnackBar(context, '${e.message ?? 'Unk Error'}');
-          }
-        }
-      });
+            if (e is PlatformException) {
+              if (e.code == FirebaseAuthUi.kUserCancelledError) {
+                showOnlySnackBar(this.context, 'User cancelled login');
+              } else {
+                showOnlySnackBar(this.context, '${e.message ?? 'Unk Error'}');
+              }
+            }
+          });
     }
     /** Already login */
     else {
-      await _checkLoginState(context);
+      await _checkLoginState(this.context);
     }
   }
 
@@ -125,35 +161,33 @@ class _MyHomePageState extends State<MyHomePage>
       /** Already Login, get Token */
       FirebaseAuth.FirebaseAuth.instance.currentUser
           .getIdToken()
-          .then((token) async =>
-      {
-        _peopleRef = database.reference().child(PEOPLE_REF),
-        _chatListRef = database
-            .reference()
-            .child(CHATLIST_REF)
-            .child(FirebaseAuth.FirebaseAuth.instance.currentUser.uid),
+          .then((token) async => {
+                _peopleRef = database.reference().child(PEOPLE_REF),
+                _chatListRef = database
+                    .reference()
+                    .child(CHATLIST_REF)
+                    .child(FirebaseAuth.FirebaseAuth.instance.currentUser.uid),
 
-        /** Load Information */
-        _peopleRef
-            .child(FirebaseAuth.FirebaseAuth.instance.currentUser.uid)
-            .once()
-            .then((snapshot) =>
-        {
-          if (snapshot != null && snapshot.value != null)
-            {
-              setState(() {
-                isUserInit = true;
-              })
-            }
-          else
-            {
-              setState(() {
-                Navigator.pushNamed(context, "/register");
-                isUserInit = true;
-              })
-            }
-        })
-      });
+                /** Load Information */
+                _peopleRef
+                    .child(FirebaseAuth.FirebaseAuth.instance.currentUser.uid)
+                    .once()
+                    .then((snapshot) => {
+                          if (snapshot != null && snapshot.value != null)
+                            {
+                              setState(() {
+                                isUserInit = true;
+                              })
+                            }
+                          else
+                            {
+                              setState(() {
+                                isUserInit = true;
+                              }),
+                              Navigator.pushNamed(this.context, "/register")
+                            }
+                        })
+              });
     }
 
     return FirebaseAuth.FirebaseAuth.instance.currentUser;
