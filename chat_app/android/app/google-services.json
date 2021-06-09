@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "497404881720",
+    "project_id": "flutter-chatting-app-be2b8",
+    "storage_bucket": "flutter-chatting-app-be2b8.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:497404881720:android:28ed3ca51a3fa286c56fcd",
+        "android_client_info": {
+          "package_name": "com.blackbirds.chat_app"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "497404881720-pjndibf9ihlp7q0on37i9roahe4k66eg.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCIhpbYxgKHcECrO2clPHoNx7ND5fWUEr4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "497404881720-pjndibf9ihlp7q0on37i9roahe4k66eg.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
