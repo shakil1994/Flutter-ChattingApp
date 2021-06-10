@@ -8,8 +8,14 @@ class ChatMessage {
   String uid;
   String pictureLink;
 
-  ChatMessage(this.timeStamp, this.senderId, this.name, this.content,
-      this.picture, this.uid, this.pictureLink);
+  ChatMessage(
+      {this.timeStamp,
+      this.senderId,
+      this.name,
+      this.content,
+      this.picture,
+      this.uid,
+      this.pictureLink});
 
   ChatMessage.fromJson(Map<String, dynamic> json) {
     timeStamp = json['timeStamp'];
