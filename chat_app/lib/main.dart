@@ -132,7 +132,7 @@ class _MyHomePageState extends State<MyHomePage>
                 if (tab.text == 'Chat') {
                   return loadChatList(database, _chatListRef);
                 } else {
-                  return loadPeople(_peopleRef);
+                  return loadPeople(database, _peopleRef);
                 }
               }).toList())
           : Center(

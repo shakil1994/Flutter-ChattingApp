@@ -130,8 +130,6 @@ class DetailScreen extends ConsumerWidget {
     chatRef.once().then((DataSnapshot snapshot) {
       /** If user already create chat before */
       if (snapshot != null) {
-        appendChat(context, chatMessage, estimatedServerTimeInMs);
-      } else {
         createChat(context, chatMessage, estimatedServerTimeInMs);
       }
     });
@@ -145,17 +143,37 @@ class DetailScreen extends ConsumerWidget {
         friendName: createName(context.read(chatUser).state),
         friendId: context.read(chatUser).state.uid,
         createName: createName(context.read(userLogged).state),
-        lastMessage: chatMessage.picture ? "<Image>" : chatMessage.content);
+        lastMessage: chatMessage.picture ? "<Image>" : chatMessage.content,
+    lastUpdate: DateTime.now().millisecondsSinceEpoch,
+    createDate: DateTime.now().millisecondsSinceEpoch);
 
     /** Add on Firebase */
-    database.reference().child(CHATLIST_REF).child(user.uid).set(<String,
-        ChatInfo>{context.read(chatUser).state.uid: chatInfo}).then((value) {
+    database.reference().child(CHATLIST_REF).child(user.uid)
+        .child(context.read(chatUser).state.uid)
+        .set(<String, dynamic>{
+          'lastUpdate': chatInfo.lastUpdate,
+      'lastMessage': chatInfo.lastMessage,
+      'createId': chatInfo.createId,
+      'friendId': chatInfo.friendId,
+      'createName': chatInfo.createName,
+      'friendName': chatInfo.friendName,
+      'createDate': chatInfo.createDate
+    }).then((value) {
       /** After success, copy to Friend chat list */
       database
           .reference()
           .child(CHATLIST_REF)
           .child(context.read(chatUser).state.uid)
-          .set(<String, ChatInfo>{user.uid: chatInfo}).then((value) {
+      .child(user.uid)
+          .set(<String, dynamic>{
+        'lastUpdate': chatInfo.lastUpdate,
+        'lastMessage': chatInfo.lastMessage,
+        'createId': chatInfo.createId,
+        'friendId': chatInfo.friendId,
+        'createName': chatInfo.createName,
+        'friendName': chatInfo.friendName,
+        'createDate': chatInfo.createDate
+      }).then((value) {
         /** After success, add on Chat Reference */
         chatRef.push().set(<String, dynamic>{
           'uid': chatMessage.uid,
@@ -179,7 +197,7 @@ class DetailScreen extends ConsumerWidget {
         (e) => showOnlySnackBar(context, 'Error can\'t submit User Chat List'));
   }
 
-  void appendChat(BuildContext context, ChatMessage chatMessage,
+  /*void appendChat(BuildContext context, ChatMessage chatMessage,
       int estimatedServerTimeInMs) {
     var update_data = Map<String, dynamic>();
     update_data['lastUpdate'] = estimatedServerTimeInMs;
@@ -189,22 +207,22 @@ class DetailScreen extends ConsumerWidget {
       update_data['lastMessage'] = chatMessage.content;
     }
 
-    /** Update */
+    *//** Update *//*
     database
         .reference()
         .child(CHATLIST_REF)
-        .child(user.uid) /** You */
-        .child(context.read(chatUser).state.uid) /** Friend */
+        .child(user.uid) *//** You *//*
+        .child(context.read(chatUser).state.uid) *//** Friend *//*
         .update(update_data)
         .then((value) {
       database
           .reference()
           .child(CHATLIST_REF)
-          .child(context.read(chatUser).state.uid) /** Friend */
-          .child(user.uid) /** You */
+          .child(context.read(chatUser).state.uid) *//** Friend *//*
+          .child(user.uid) *//** You *//*
           .update(update_data)
           .then((value) {
-            /** Add to Chat ref */
+            *//** Add to Chat ref *//*
         chatRef.push().set(<String, dynamic>{
           'uid': chatMessage.uid,
           'name': chatMessage.name,
@@ -214,10 +232,10 @@ class DetailScreen extends ConsumerWidget {
           'senderId': chatMessage.senderId,
           'timeStamp': chatMessage.timeStamp
         }).then((value) {
-          /** Clear Text content */
+          *//** Clear Text content *//*
           _textEditingController.text = '';
 
-          /** Auto Scroll */
+          *//** Auto Scroll *//*
           autoScrollReverse(_scrollController);
         }).catchError(
                 (e) => showOnlySnackBar(context, 'Error submit CHAT REF '));
@@ -226,5 +244,5 @@ class DetailScreen extends ConsumerWidget {
               context, 'Error can\'t update FRIEND CHAT LIST'));
     }).catchError((e) =>
             showOnlySnackBar(context, 'Error can\'t update USER CHAT LIST'));
-  }
+  }*/
 }
