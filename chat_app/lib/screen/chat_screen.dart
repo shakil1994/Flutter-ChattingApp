@@ -1,6 +1,7 @@
 // @dart=2.9
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math';
 
 import 'package:chat_app/const/const.dart';
@@ -17,6 +18,9 @@ import 'package:firebase_database/ui/firebase_animated_list.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/src/widgets/framework.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:sliding_sheet/sliding_sheet.dart';
+
+import 'camera_screen.dart';
 
 class DetailScreen extends ConsumerWidget {
   FirebaseApp app;
@@ -33,6 +37,7 @@ class DetailScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, watch) {
     var friendUser = watch(chatUser).state;
+    var isShowPicture = watch(isCapture).state;
     return Scaffold(
       appBar: AppBar(
         centerTitle: true,
@@ -70,31 +75,72 @@ class DetailScreen extends ConsumerWidget {
                   : Center(child: CircularProgressIndicator()),
             ),
             Expanded(
-                flex: 1,
-                child: Row(children: [
-                  Expanded(
-                      child: TextField(
-                    keyboardType: TextInputType.multiline,
-                    expands: true,
-                    minLines: null,
-                    maxLines: null,
-                    decoration: InputDecoration(hintText: 'Enter your message'),
-                    controller: _textEditingController,
-                  )),
-                  IconButton(
-                      onPressed: () {
-                        offsetRef.once().then((DataSnapshot snapshot) {
-                          var offset = snapshot.value as int;
-                          var estimatedServerTimeInMs =
-                              DateTime.now().millisecondsSinceEpoch + offset;
+                flex: isShowPicture ? 2 : 1,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    isShowPicture
+                        ? Container(
+                            width: 80,
+                            height: 80,
+                            child: Stack(
+                              children: [
+                                Image.file(
+                                    File(context
+                                        .read(thumbnailImage)
+                                        .state
+                                        .path),
+                                    fit: BoxFit.fill),
+                                Align(
+                                  alignment: Alignment.topRight,
+                                  child: IconButton(
+                                    icon:
+                                        Icon(Icons.clear, color: Colors.black),
+                                    onPressed: () {
+                                      context.read(isCapture).state = false;
+                                    },
+                                  ),
+                                )
+                              ],
+                            ),
+                          )
+                        : Container(),
+                    Expanded(
+                        child: Row(children: [
+                      IconButton(
+                          onPressed: () {
+                            showBottomSheetPicture(context);
+                          },
+                          icon: Icon(Icons.add_a_photo)),
+                      Expanded(
+                          child: TextField(
+                        keyboardType: TextInputType.multiline,
+                        expands: true,
+                        minLines: null,
+                        maxLines: null,
+                        decoration:
+                            InputDecoration(hintText: 'Enter your message'),
+                        controller: _textEditingController,
+                      )),
+                      IconButton(
+                          onPressed: () {
+                            offsetRef.once().then((DataSnapshot snapshot) {
+                              var offset = snapshot.value as int;
+                              var estimatedServerTimeInMs =
+                                  DateTime.now().millisecondsSinceEpoch +
+                                      offset;
 
-                          submitChat(context, estimatedServerTimeInMs);
-                        });
-                        /** Auto scroll chat layout to end  */
-                        autoScroll(_scrollController);
-                      },
-                      icon: Icon(Icons.send))
-                ]))
+                              submitChat(context, estimatedServerTimeInMs);
+                            });
+                            /** Auto scroll chat layout to end  */
+                            autoScroll(_scrollController);
+                          },
+                          icon: Icon(Icons.send))
+                    ]))
+                  ],
+                ))
           ],
         ),
       )),
@@ -144,14 +190,17 @@ class DetailScreen extends ConsumerWidget {
         friendId: context.read(chatUser).state.uid,
         createName: createName(context.read(userLogged).state),
         lastMessage: chatMessage.picture ? "<Image>" : chatMessage.content,
-    lastUpdate: DateTime.now().millisecondsSinceEpoch,
-    createDate: DateTime.now().millisecondsSinceEpoch);
+        lastUpdate: DateTime.now().millisecondsSinceEpoch,
+        createDate: DateTime.now().millisecondsSinceEpoch);
 
     /** Add on Firebase */
-    database.reference().child(CHATLIST_REF).child(user.uid)
+    database
+        .reference()
+        .child(CHATLIST_REF)
+        .child(user.uid)
         .child(context.read(chatUser).state.uid)
         .set(<String, dynamic>{
-          'lastUpdate': chatInfo.lastUpdate,
+      'lastUpdate': chatInfo.lastUpdate,
       'lastMessage': chatInfo.lastMessage,
       'createId': chatInfo.createId,
       'friendId': chatInfo.friendId,
@@ -164,7 +213,7 @@ class DetailScreen extends ConsumerWidget {
           .reference()
           .child(CHATLIST_REF)
           .child(context.read(chatUser).state.uid)
-      .child(user.uid)
+          .child(user.uid)
           .set(<String, dynamic>{
         'lastUpdate': chatInfo.lastUpdate,
         'lastMessage': chatInfo.lastMessage,
@@ -193,56 +242,68 @@ class DetailScreen extends ConsumerWidget {
             (e) => showOnlySnackBar(context, 'Error submit CHAT REF '));
       }).catchError((e) => showOnlySnackBar(
               context, 'Error can\'t submit Friend Chat List'));
-    }).catchError(
-        (e) => showOnlySnackBar(context, 'Error can\'t submit User Chat List'));
+    }).catchError((e) =>
+            showOnlySnackBar(context, 'Error can\'t submit User Chat List'));
   }
 
-  /*void appendChat(BuildContext context, ChatMessage chatMessage,
-      int estimatedServerTimeInMs) {
-    var update_data = Map<String, dynamic>();
-    update_data['lastUpdate'] = estimatedServerTimeInMs;
-    if (chatMessage.picture) {
-      update_data['lastMessage'] = '<Image>';
-    } else {
-      update_data['lastMessage'] = chatMessage.content;
-    }
+  void showBottomSheetPicture(BuildContext context) async {
+    final result = await showSlidingBottomSheet(context, builder: (context) {
+      return SlidingSheetDialog(
+        elevation: 8,
+        cornerRadius: 16,
+        snapSpec: const SnapSpec(
+            snap: true,
+            snappings: [0.2],
+            positioning: SnapPositioning.relativeToAvailableSpace),
+        builder: (context, state) {
+          return Container(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () async {
+                      await _navigateCamera(context);
+                    },
+                    child: Row(
+                      children: [
+                        Icon(Icons.camera),
+                        SizedBox(width: 20),
+                        Text('Camera',
+                            style: TextStyle(fontSize: 16, color: Colors.black))
+                      ],
+                    ),
+                  ),
+                  SizedBox(height: 10),
+                  GestureDetector(
+                    onTap: () {},
+                    child: Row(
+                      children: [
+                        Icon(Icons.photo),
+                        SizedBox(width: 20),
+                        Text('Photo',
+                            style: TextStyle(fontSize: 16, color: Colors.black))
+                      ],
+                    ),
+                  )
+                ],
+              ),
+            ),
+          );
+        },
+      );
+    });
+  }
 
-    *//** Update *//*
-    database
-        .reference()
-        .child(CHATLIST_REF)
-        .child(user.uid) *//** You *//*
-        .child(context.read(chatUser).state.uid) *//** Friend *//*
-        .update(update_data)
-        .then((value) {
-      database
-          .reference()
-          .child(CHATLIST_REF)
-          .child(context.read(chatUser).state.uid) *//** Friend *//*
-          .child(user.uid) *//** You *//*
-          .update(update_data)
-          .then((value) {
-            *//** Add to Chat ref *//*
-        chatRef.push().set(<String, dynamic>{
-          'uid': chatMessage.uid,
-          'name': chatMessage.name,
-          'content': chatMessage.content,
-          'pictureLink': chatMessage.pictureLink,
-          'picture': chatMessage.picture,
-          'senderId': chatMessage.senderId,
-          'timeStamp': chatMessage.timeStamp
-        }).then((value) {
-          *//** Clear Text content *//*
-          _textEditingController.text = '';
+  _navigateCamera(BuildContext context) async {
+    final result = await Navigator.push(
+        context, MaterialPageRoute(builder: (context) => MyCameraPage()));
 
-          *//** Auto Scroll *//*
-          autoScrollReverse(_scrollController);
-        }).catchError(
-                (e) => showOnlySnackBar(context, 'Error submit CHAT REF '));
-      })
-          .catchError((e) => showOnlySnackBar(
-              context, 'Error can\'t update FRIEND CHAT LIST'));
-    }).catchError((e) =>
-            showOnlySnackBar(context, 'Error can\'t update USER CHAT LIST'));
-  }*/
+    /** Set State */
+    context.read(thumbnailImage).state = result;
+    context.read(isCapture).state = true;
+
+    /** Close Sliding Sheet */
+    Navigator.pop(context);
+  }
 }

@@ -38,6 +38,10 @@ dependencies:
   bubble_tab_indicator: any
   bubble: any
   page_transition: any
+  camera: any
+  path_provider: any
+  path: any
+  sliding_sheet: any
 
 dev_dependencies:
   flutter_test:
